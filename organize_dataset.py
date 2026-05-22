@@ -1,8 +1,8 @@
 import os
 import shutil
 
-source_dir = r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\dataset\PlantVillage"
-target_dir = r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\binary_dataset"
+source_dir = r"C:\Users\crop-disease-detector\dataset\PlantVillage"
+target_dir = r"C:\Users\crop-disease-detector\binary_dataset"
 
 healthy_dir = os.path.join(target_dir, "healthy")
 diseased_dir = os.path.join(target_dir, "diseased")
