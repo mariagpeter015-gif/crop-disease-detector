@@ -2,25 +2,26 @@ import torch
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
-# Image transforms
+# Device check (optional)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
+
+# Transform (same as training)
 transform = transforms.Compose([
     transforms.Resize((128, 128)),
-    transforms.ToTensor()
+    transforms.ToTensor(),
 ])
 
 # Load dataset
 dataset = datasets.ImageFolder(
-    root='C:/Users/maria/OneDrive/Documents/crop-disease-detector/binary_dataset',
+    root=r'C:\Users\maria\OneDrive\Documents\crop-disease-detector\dataset\Tomato Leaf Disease\train',
     transform=transform
 )
 
-# Create DataLoader
-train_loader = DataLoader(
-    dataset,
-    batch_size=32,
-    shuffle=True
-)
+# DataLoader
+loader = DataLoader(dataset, batch_size=32, shuffle=True)
 
-# Print dataset information
+# Debug info
 print("Classes:", dataset.classes)
+print("Class mapping:", dataset.class_to_idx)
 print("Total Images:", len(dataset))
