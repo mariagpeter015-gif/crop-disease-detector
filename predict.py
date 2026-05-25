@@ -36,7 +36,7 @@ transform = transforms.Compose([
 ])
 
 # Image path
-img_path = r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\image_blight.jpg"
+img_path = r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\leafeb.jpg"
 
 # Load image
 image = Image.open(img_path).convert("RGB")

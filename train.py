@@ -14,31 +14,46 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("Using device:", device)
 
-# Transforms
+# =========================
+# Image Transforms
+# =========================
 transform = transforms.Compose([
+
     transforms.Resize((128, 128)),
+
+    # Data augmentation
     transforms.RandomHorizontalFlip(),
+
     transforms.RandomRotation(15),
+
     transforms.ToTensor(),
+
+    # Normalize images
     transforms.Normalize(
         [0.5, 0.5, 0.5],
         [0.5, 0.5, 0.5]
     )
 ])
 
-# Train dataset
+# =========================
+# Train Dataset
+# =========================
 train_dataset = datasets.ImageFolder(
     root=r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\dataset\Tomato Leaf Disease\train",
     transform=transform
 )
 
-# Test dataset
+# =========================
+# Test Dataset
+# =========================
 test_dataset = datasets.ImageFolder(
     root=r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\dataset\Tomato Leaf Disease\test",
     transform=transform
 )
 
+# =========================
 # DataLoaders
+# =========================
 train_loader = DataLoader(
     train_dataset,
     batch_size=32,
@@ -51,7 +66,9 @@ test_loader = DataLoader(
     shuffle=False
 )
 
-# Dataset information
+# =========================
+# Dataset Information
+# =========================
 print("Classes:", train_dataset.classes)
 
 print("Class mapping:", train_dataset.class_to_idx)
@@ -64,21 +81,44 @@ print("Train Images:", len(train_dataset))
 
 print("Test Images:", len(test_dataset))
 
-# Load model
+# =========================
+# Load Model
+# =========================
 model = CNN().to(device)
 
-# Loss function and optimizer
-criterion = nn.CrossEntropyLoss()
+# =========================
+# Weighted Loss Function
+# =========================
+# Early blight has fewer images,
+# so we give it higher weight
 
+weights = torch.tensor([1.8, 1.0, 1.2]).to(device)
+
+criterion = nn.CrossEntropyLoss(weight=weights)
+
+# =========================
+# Optimizer
+# =========================
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# Store losses
+# =========================
+# Store Losses
+# =========================
 train_losses = []
 
-# Number of epochs
-epochs = 5
+# =========================
+# Save Best Model Only
+# =========================
+best_accuracy = 0.0
 
-# Training loop
+# =========================
+# Number of Epochs
+# =========================
+epochs = 15
+
+# =========================
+# Training Loop
+# =========================
 for epoch in range(epochs):
 
     model.train()
@@ -89,13 +129,13 @@ for epoch in range(epochs):
 
         images, labels = images.to(device), labels.to(device)
 
-        # Clear gradients
+        # Clear previous gradients
         optimizer.zero_grad()
 
         # Forward pass
         outputs = model(images)
 
-        # Loss
+        # Calculate loss
         loss = criterion(outputs, labels)
 
         # Backpropagation
@@ -106,14 +146,20 @@ for epoch in range(epochs):
 
         running_loss += loss.item()
 
-    # Average loss
+    # =========================
+    # Average Loss
+    # =========================
     avg_loss = running_loss / len(train_loader)
 
     train_losses.append(avg_loss)
 
-    print(f"Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.4f}")
+    print(f"\nEpoch [{epoch+1}/{epochs}]")
 
+    print(f"Training Loss: {avg_loss:.4f}")
+
+    # =========================
     # Validation
+    # =========================
     model.eval()
 
     correct = 0
@@ -137,15 +183,30 @@ for epoch in range(epochs):
 
     print(f"Validation Accuracy: {accuracy:.2f}%")
 
-# Save model
-torch.save(
-    model.state_dict(),
-    r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\crop_disease_model.pth"
-)
+    # =========================
+    # Save Best Model
+    # =========================
+    if accuracy > best_accuracy:
 
-print("Training completed!")
+        best_accuracy = accuracy
 
-# Plot training loss curve
+        torch.save(
+            model.state_dict(),
+            r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\crop_disease_model.pth"
+        )
+
+        print("Best model saved!")
+
+# =========================
+# Training Finished
+# =========================
+print("\nTraining completed!")
+
+print(f"Best Validation Accuracy: {best_accuracy:.2f}%")
+
+# =========================
+# Plot Loss Curve
+# =========================
 plt.plot(train_losses)
 
 plt.title("Training Loss Curve")
