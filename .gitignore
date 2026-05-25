@@ -4,7 +4,6 @@ binary_dataset/
 __pycache__/
 *.pyc
 *.pt
-*.pth
 .vscode/
 *.jpg
 *.png
