@@ -1,50 +1,102 @@
+import sys
 import torch
-from PIL import Image
-from torchvision import transforms, datasets
-from model import CNN
 
+from PIL import Image
+from torchvision import transforms, datasets, models
+
+# =========================
 # Device
+# =========================
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load model
-model = CNN().to(device)
+# =========================
+# Check Command Line Input
+# =========================
+if len(sys.argv) != 2:
 
-model.load_state_dict(torch.load(
-    r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\crop_disease_model.pth",
-    map_location=device
-))
+    print("Usage: python predict.py <image_path>")
 
-model.eval()
+    sys.exit()
 
-# Load class names automatically from dataset
+# =========================
+# Get Image Path
+# =========================
+img_path = sys.argv[1]
+
+# =========================
+# Load Class Names
+# =========================
 temp_dataset = datasets.ImageFolder(
     r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\dataset\Tomato Leaf Disease\train"
 )
 
 classes = temp_dataset.classes
 
-print("Class Mapping:", classes)
-
-# Image transforms (MUST match training)
+# =========================
+# Image Transforms
+# =========================
 transform = transforms.Compose([
+
     transforms.Resize((128, 128)),
+
     transforms.ToTensor(),
+
     transforms.Normalize(
         [0.5, 0.5, 0.5],
         [0.5, 0.5, 0.5]
     )
 ])
 
-# Image path
-img_path = r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\leafeb.jpg"
+# =========================
+# Load ResNet18 Model
+# =========================
+model = models.resnet18(weights=None)
 
-# Load image
+# Replace classifier head
+model.fc = torch.nn.Sequential(
+
+    torch.nn.Linear(
+        model.fc.in_features,
+        128
+    ),
+
+    torch.nn.ReLU(),
+
+    torch.nn.Dropout(0.3),
+
+    torch.nn.Linear(128, 3)
+)
+
+# =========================
+# Load Trained Weights
+# =========================
+model.load_state_dict(torch.load(
+    r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\crop_disease_resnet.pth",
+    map_location=device
+))
+
+model = model.to(device)
+
+model.eval()
+
+# =========================
+# Load Image using PIL
+# =========================
 image = Image.open(img_path).convert("RGB")
 
-# Apply transforms
-image = transform(image).unsqueeze(0).to(device)
+# =========================
+# Apply Transforms
+# =========================
+image = transform(image)
 
+# Add batch dimension
+image = image.unsqueeze(0)
+
+image = image.to(device)
+
+# =========================
 # Prediction
+# =========================
 with torch.no_grad():
 
     output = model(image)
@@ -53,7 +105,13 @@ with torch.no_grad():
 
     confidence, predicted = torch.max(probs, 1)
 
+# =========================
 # Output
-print("Prediction:", classes[predicted.item()])
+# =========================
+print("\nPrediction:")
 
-print("Confidence:", round(confidence.item() * 100, 2), "%")
+print(classes[predicted.item()])
+
+print("\nConfidence:")
+
+print(round(confidence.item() * 100, 2), "%")

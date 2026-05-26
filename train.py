@@ -3,32 +3,51 @@ import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
 from collections import Counter
 
-from model import CNN
-
+# =========================
 # Device
+# =========================
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("Using device:", device)
 
 # =========================
-# Image Transforms
+# Train Transforms (TASK 4)
 # =========================
-transform = transforms.Compose([
+train_transform = transforms.Compose([
 
     transforms.Resize((128, 128)),
 
-    # Data augmentation
     transforms.RandomHorizontalFlip(),
 
     transforms.RandomRotation(15),
 
+    transforms.ColorJitter(
+        brightness=0.2,
+        contrast=0.2,
+        saturation=0.2
+    ),
+
     transforms.ToTensor(),
 
-    # Normalize images
+    transforms.Normalize(
+        [0.5, 0.5, 0.5],
+        [0.5, 0.5, 0.5]
+    )
+])
+
+# =========================
+# Test Transforms
+# =========================
+test_transform = transforms.Compose([
+
+    transforms.Resize((128, 128)),
+
+    transforms.ToTensor(),
+
     transforms.Normalize(
         [0.5, 0.5, 0.5],
         [0.5, 0.5, 0.5]
@@ -40,7 +59,7 @@ transform = transforms.Compose([
 # =========================
 train_dataset = datasets.ImageFolder(
     root=r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\dataset\Tomato Leaf Disease\train",
-    transform=transform
+    transform=train_transform
 )
 
 # =========================
@@ -48,7 +67,7 @@ train_dataset = datasets.ImageFolder(
 # =========================
 test_dataset = datasets.ImageFolder(
     root=r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\dataset\Tomato Leaf Disease\test",
-    transform=transform
+    transform=test_transform
 )
 
 # =========================
@@ -82,16 +101,35 @@ print("Train Images:", len(train_dataset))
 print("Test Images:", len(test_dataset))
 
 # =========================
-# Load Model
+# RESNET18 MODEL (TASK 5)
 # =========================
-model = CNN().to(device)
+model = models.resnet18(
+    weights=models.ResNet18_Weights.DEFAULT
+)
+
+# Freeze pretrained layers
+for param in model.parameters():
+    param.requires_grad = False
+
+# Replace classifier head
+num_features = model.fc.in_features
+
+model.fc = nn.Sequential(
+
+    nn.Linear(num_features, 128),
+
+    nn.ReLU(),
+
+    nn.Dropout(0.3),
+
+    nn.Linear(128, 3)
+)
+
+model = model.to(device)
 
 # =========================
-# Weighted Loss Function
+# Loss Function
 # =========================
-# Early blight has fewer images,
-# so we give it higher weight
-
 weights = torch.tensor([1.8, 1.0, 1.2]).to(device)
 
 criterion = nn.CrossEntropyLoss(weight=weights)
@@ -99,22 +137,19 @@ criterion = nn.CrossEntropyLoss(weight=weights)
 # =========================
 # Optimizer
 # =========================
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(
+    model.fc.parameters(),
+    lr=0.001
+)
 
 # =========================
-# Store Losses
+# Training Setup
 # =========================
+epochs = 10
+
 train_losses = []
 
-# =========================
-# Save Best Model Only
-# =========================
 best_accuracy = 0.0
-
-# =========================
-# Number of Epochs
-# =========================
-epochs = 15
 
 # =========================
 # Training Loop
@@ -127,9 +162,11 @@ for epoch in range(epochs):
 
     for images, labels in train_loader:
 
-        images, labels = images.to(device), labels.to(device)
+        images = images.to(device)
 
-        # Clear previous gradients
+        labels = labels.to(device)
+
+        # Clear old gradients
         optimizer.zero_grad()
 
         # Forward pass
@@ -147,7 +184,7 @@ for epoch in range(epochs):
         running_loss += loss.item()
 
     # =========================
-    # Average Loss
+    # Average Training Loss
     # =========================
     avg_loss = running_loss / len(train_loader)
 
@@ -163,13 +200,16 @@ for epoch in range(epochs):
     model.eval()
 
     correct = 0
+
     total = 0
 
     with torch.no_grad():
 
         for images, labels in test_loader:
 
-            images, labels = images.to(device), labels.to(device)
+            images = images.to(device)
+
+            labels = labels.to(device)
 
             outputs = model(images)
 
@@ -192,7 +232,7 @@ for epoch in range(epochs):
 
         torch.save(
             model.state_dict(),
-            r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\crop_disease_model.pth"
+            r"C:\Users\maria\OneDrive\Documents\crop-disease-detector\crop_disease_resnet.pth"
         )
 
         print("Best model saved!")
@@ -200,16 +240,16 @@ for epoch in range(epochs):
 # =========================
 # Training Finished
 # =========================
-print("\nTraining completed!")
+print("\nTraining Completed!")
 
-print(f"Best Validation Accuracy: {best_accuracy:.2f}%")
+print(f"Best Accuracy: {best_accuracy:.2f}%")
 
 # =========================
 # Plot Loss Curve
 # =========================
 plt.plot(train_losses)
 
-plt.title("Training Loss Curve")
+plt.title("Training Loss Curve (ResNet18)")
 
 plt.xlabel("Epoch")
 
