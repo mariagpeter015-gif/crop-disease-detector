@@ -1,72 +1,178 @@
-# Crop Disease Detection using Deep Learning (Computer Vision Engineer)
+# Crop Disease Detection using Deep Learning
 
-This project is part of the internship task focused on building a Computer Vision system for autonomous quality inspection of crops using deep learning. The internship is conducted by Zelbytes Pvt Ltd. at Thiruvananthapuram, Kerala, India.
+This project is part of an internship task focused on building a Computer Vision system for autonomous crop disease detection using deep learning. The internship is conducted by Zelbytes Pvt Ltd., Thiruvananthapuram, Kerala, India.
 
 ---
 
-## Task 1: Framework Initialization
+## Project Objective
 
-The goal of this task was to set up a deep learning environment and prepare the dataset pipeline for training a model to classify crops as **healthy or diseased**.
+To develop an end-to-end deep learning system that classifies crop leaf images as healthy or diseased and provides predictions with confidence scores, along with cure and prevention suggestions.
 
 ---
 
 ## Dataset
 
-The project uses the **PlantVillage dataset**, which contains images of healthy and diseased crop leaves across multiple plant species.
+The project uses the **Tomato Disease Dataset**, which contains images of healthy and diseased tomato crop leaves.
 
-For this task, the dataset was reorganized into two categories:
-- Healthy crops
-- Diseased crops
+For this task, the dataset was reorganized into three classes:
+
+- Tomato___Healthy  
+- Tomato___Early_blight  
+- Tomato___Late_blight  
 
 ---
 
 ## Methodology
 
-- Set up Python environment with PyTorch
-- Installed required libraries: `torch`, `torchvision`
-- Loaded dataset using `torchvision.datasets.ImageFolder`
-- Applied image preprocessing:
-  - Resize images to 128×128
-  - Convert images to tensor format
-- Created DataLoader to batch and shuffle data efficiently
-- Verified dataset loading by printing class labels and total image count
+### 1. Data Preprocessing
+- Resized images to 128×128 pixels
+- Converted images to tensor format
+- Normalized pixel values
+
+### 2. Data Augmentation (Training Only)
+- Random horizontal flips
+- Random rotations
+- Color jitter (brightness, contrast, saturation)
+
+### 3. Model Architecture
+- Transfer Learning using **ResNet18**
+- Pretrained on ImageNet
+- Custom classifier head added:
+  - Linear layer (128 neurons)
+  - ReLU activation
+  - Dropout (0.3)
+  - Final output layer (3 classes)
+
+### 4. Training Strategy
+- Frozen base layers of ResNet18
+- Optimizer: Adam
+- Loss Function: CrossEntropyLoss
+- Weighted loss to handle class imbalance
+- Trained for multiple epochs with validation monitoring
+
+---
+
+## Evaluation Metrics
+
+- Confusion Matrix
+- Precision
+- Recall
+- F1-score
+- Classification Report (sklearn)
+
+---
+
+## Model Deployment
+
+### 🔹 FastAPI Backend
+- Model served using FastAPI
+- Endpoint: `/predict`
+- Accepts image uploads
+- Returns:
+  - Predicted class
+  - Confidence score
+
+### 🔹 Docker Containerization
+- Model packaged inside Docker container
+- Ensures portability and deployment consistency
+
+### 🔹 Integration Testing
+- Python `requests` client sends images to API
+- Receives and logs predictions from containerized service
+
+---
+
+## Frontend (Streamlit)
+
+A simple web interface built using Streamlit that allows users to:
+
+- Upload leaf images
+- Get disease predictions
+- View confidence scores
+- Receive:
+  - Cure recommendations
+  - Prevention tips
 
 ---
 
 ## Technologies Used
 
-- Python
-- PyTorch
-- Torchvision
-- VS Code
+- Python  
+- PyTorch  
+- Torchvision  
+- FastAPI  
+- Docker  
+- Streamlit  
+- Scikit-learn  
+- Matplotlib / Seaborn  
+- VS Code  
 
 ---
 
 ## Project Structure
-```text
+
+```
 crop-disease-detector/
 │
-├── main.py                  
-├── model.py               
-├── train.py                
-├── test.py                 
-├── dataset.py              
-├── organize_dataset.py     
-├── .gitignore              
-└── README.md             
+├── train.py
+├── app.py
+├── predict.py
+├── test_client.py
+├── frontend.py
+├── Dockerfile
+├── crop_disease_resnet.pth
+├── dataset/
+├── test_images/
+├── .gitignore
+└── README.md
 ```
 ---
 
+## How to Run the Project
+
+### 1. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+### 2. Run FastAPI backend (Docker)
+```bash
+docker run -p 8000:8000 crop-disease-api
+```
+### 3. Run frontend (Streamlit)
+```bash
+streamlit run frontend.py
+```
+### 4. Run integration test
+```bash
+python test_client.py
+```
+---
+
+## Results
+
+High validation accuracy achieved using ResNet18 transfer learning
+Robust performance due to data augmentation
+Reliable predictions across multiple disease classes
 
 ---
 
-## How to Run
+## Future Improvements
 
-1. Clone the repository
-2. Install dependencies
-3. Run the dataset loader
+Expand to multiple crop species
+Deploy on cloud (AWS / Render / Streamlit Cloud)
+Improve UI with advanced dashboards
+Add real-time camera detection
 
 ---
 
+## Author
 
+Internship Project – Zelbytes Pvt Ltd
+Computer Vision Engineer Internship
+Thiruvananthapuram, Kerala
 
+---
+
+## Conclusion
+
+This project demonstrates a complete end-to-end deep learning pipeline including dataset preparation, model training, evaluation, API deployment, Docker containerization, integration testing, and frontend development.
