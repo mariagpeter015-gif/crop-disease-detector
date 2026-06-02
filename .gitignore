@@ -5,5 +5,3 @@ __pycache__/
 *.pyc
 *.pt
 .vscode/
-*.jpg
-*.png
